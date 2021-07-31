@@ -20,6 +20,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return EvalBlockStatements(node, env)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression, env)
+	case *ast.StringLiteral:
+		return &object.String{Value: node.Value}
 	case *ast.LetStatement:
 		val := Eval(node.Value, env)
 		if IsError(val) {
@@ -78,9 +80,52 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Integer{Value: node.Value}
 	case *ast.Boolean:
 		return NativeBoolToBooleanObject(node.Value)
+	case *ast.ArrayLiteral:
+		elements := EvalExpressions(node.Elements, env)
+		if len(elements) == 1 && IsError(elements[0]) {
+			return elements[0]
+		}
+		return &object.Array{Elements: elements}
+	case *ast.IndexExpression:
+		left := Eval(node.Left, env)
+		if IsError(left) {
+			return left
+		}
+
+		index := Eval(node.Index, env)
+		if IsError(index) {
+			return index
+		}
+
+		return EvalIndexExpression(left, index)
 	}
 
 	return nil
+}
+
+func EvalIndexExpression(left, index object.Object) object.Object {
+	switch {
+	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		return EvalArrayIndexExpression(left, index)
+	default:
+		return NewError("index operator not supported: %s", left.Type())
+	}
+}
+
+func EvalArrayIndexExpression(array, index object.Object) object.Object {
+	arrayObj := array.(*object.Array)
+	idx := index.(*object.Integer).Value
+	max := int64(len(arrayObj.Elements) - 1)
+
+	if idx < 0 {
+		idx = max + idx + 1
+	}
+
+	if idx < 0 || idx > max {
+		return NULL
+	}
+
+	return arrayObj.Elements[idx]
 }
 
 func EvalExpressions(exps []ast.Expression, env *object.Environment) []object.Object {
@@ -98,14 +143,16 @@ func EvalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 }
 
 func ApplyFunction(fn object.Object, args []object.Object) object.Object {
-	function, ok := fn.(*object.Function)
-	if !ok {
+	switch fn := fn.(type) {
+	case *object.Function:
+		extendedEnv := ExtendFunctionEnv(fn, args)
+		evaluated := Eval(fn.Body, extendedEnv)
+		return UnwrapReturnValue(evaluated)
+	case *object.Builtin:
+		return fn.Fn(args...)
+	default:
 		return NewError("not a function: %s", fn.Type())
 	}
-
-	extendedEnv := ExtendFunctionEnv(function, args)
-	evaluated := Eval(function.Body, extendedEnv)
-	return UnwrapReturnValue(evaluated)
 }
 
 func ExtendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {
@@ -189,6 +236,8 @@ func EvalInfixExpression(operator string, left, right object.Object) object.Obje
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return EvalIntegerInfixExpression(operator, left, right)
+	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+		return EvalStringInfixExpression(operator, left, right)
 	case operator == "==":
 		return NativeBoolToBooleanObject(left == right)
 	case operator == "!=":
@@ -226,6 +275,16 @@ func EvalIntegerInfixExpression(operator string, left, right object.Object) obje
 	}
 }
 
+func EvalStringInfixExpression(operator string, left, right object.Object) object.Object {
+	if operator != "+" {
+		return NewError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+	}
+
+	leftVal := left.(*object.String).Value
+	rightVal := right.(*object.String).Value
+	return &object.String{Value: leftVal + rightVal}
+}
+
 func EvalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {
 	condition := Eval(ie.Condition, env)
 	if IsError(condition) {
@@ -241,12 +300,16 @@ func EvalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 	}
 }
 
-func EvalIdentifier(ident *ast.Identifier, env *object.Environment) object.Object {
-	val, ok := env.Get(ident.Value)
-	if !ok {
-		return NewError("identifier not found: %s", ident.Value)
+func EvalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
+	if val, ok := env.Get(node.Value); ok {
+		return val
 	}
-	return val
+
+	if builtin, ok := builtins[node.Value]; ok {
+		return builtin
+	}
+
+	return NewError("identifier not found: %s", node.Value)
 }
 
 func EvalBangOperatorExpression(right object.Object) object.Object {
