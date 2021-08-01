@@ -76,6 +76,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return ApplyFunction(function, args)
 
 	// Expressions
+	case *ast.HashLiteral:
+		return EvalHashLiteral(node, env)
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
 	case *ast.Boolean:
@@ -103,13 +105,56 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	return nil
 }
 
+func EvalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {
+	pairs := make(map[object.HashKey]object.HashPair)
+
+	for keyNode, valueNode := range node.Pairs {
+		key := Eval(keyNode, env)
+		if IsError(key) {
+			return key
+		}
+
+		hashKey, ok := key.(object.Hashable)
+		if !ok {
+			return NewError("unusable as hash key: %s", key.Type())
+		}
+
+		value := Eval(valueNode, env)
+		if IsError(value) {
+			return value
+		}
+
+		hashed := hashKey.HashKey()
+		pairs[hashed] = object.HashPair{Key: key, Value: value}
+	}
+
+	return &object.Hash{Pairs: pairs}
+}
+
 func EvalIndexExpression(left, index object.Object) object.Object {
 	switch {
 	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
 		return EvalArrayIndexExpression(left, index)
+	case left.Type() == object.HASH_OBJ:
+		return EvalHashIndexExpression(left, index)
 	default:
 		return NewError("index operator not supported: %s", left.Type())
 	}
+}
+
+func EvalHashIndexExpression(left, index object.Object) object.Object {
+	hashObj := left.(*object.Hash)
+	key, ok := index.(object.Hashable)
+	if !ok {
+		return NewError("unusable as hash key: %s", index.Type())
+	}
+
+	pair, ok := hashObj.Pairs[key.HashKey()]
+	if !ok {
+		return NULL
+	}
+
+	return pair.Value
 }
 
 func EvalArrayIndexExpression(array, index object.Object) object.Object {
@@ -145,14 +190,18 @@ func EvalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 func ApplyFunction(fn object.Object, args []object.Object) object.Object {
 	switch fn := fn.(type) {
 	case *object.Function:
-		extendedEnv := ExtendFunctionEnv(fn, args)
-		evaluated := Eval(fn.Body, extendedEnv)
-		return UnwrapReturnValue(evaluated)
+		return RunFunction(fn, args)
 	case *object.Builtin:
 		return fn.Fn(args...)
 	default:
 		return NewError("not a function: %s", fn.Type())
 	}
+}
+
+func RunFunction(fn *object.Function, args []object.Object) object.Object {
+	extendedEnv := ExtendFunctionEnv(fn, args)
+	evaluated := Eval(fn.Body, extendedEnv)
+	return UnwrapReturnValue(evaluated)
 }
 
 func ExtendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {

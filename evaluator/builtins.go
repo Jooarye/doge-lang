@@ -1,6 +1,10 @@
 package evaluator
 
-import "doge/object"
+import (
+	"doge/object"
+	"fmt"
+	"strings"
+)
 
 var builtins = map[string]*object.Builtin{
 	"len": &object.Builtin{
@@ -12,6 +16,8 @@ var builtins = map[string]*object.Builtin{
 			switch arg := args[0].(type) {
 			case *object.String:
 				return &object.Integer{Value: int64(len(arg.Value))}
+			case *object.Array:
+				return &object.Integer{Value: int64(len(arg.Elements))}
 			default:
 				return NewError("argument to `len` not supported, got=%s", args[0].Type())
 			}
@@ -34,6 +40,32 @@ var builtins = map[string]*object.Builtin{
 			newElements[length] = args[1]
 
 			return &object.Array{Elements: newElements}
+		},
+	},
+	"print": &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) < 1 {
+				return NewError("print needs at least one argument. got=%d", len(args))
+			}
+
+			elements := []string{}
+			for _, arg := range args {
+				switch arg := arg.(type) {
+				case *object.String:
+					elements = append(elements, arg.Value)
+				case *object.Integer:
+					elements = append(elements, fmt.Sprintf("%d", arg.Value))
+				case *object.Boolean:
+					elements = append(elements, fmt.Sprintf("%t", arg.Value))
+				default:
+					return NewError("object cannot be represented as string. got=%T", arg)
+				}
+			}
+
+			out := strings.Join(elements, " ")
+
+			fmt.Println(out)
+			return &object.Integer{Value: int64(len(out))}
 		},
 	},
 }

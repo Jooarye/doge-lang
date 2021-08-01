@@ -32,6 +32,7 @@ const (
 	// Syntax Characters
 	COMMA     = ","
 	SEMICOLON = ";"
+	COLON     = ":"
 	LPAREN    = "("
 	RPAREN    = ")"
 	LBRACE    = "{"
