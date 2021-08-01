@@ -54,7 +54,7 @@ func Start(in io.Reader, out io.Writer) {
 		if len(p.Errors()) != 0 {
 			fmt.Println("Whoops such errors. Wow!!")
 			fmt.Println("Syntax Errors:")
-			PrintParserErrors(out, p.Errors())
+			PrintParserErrors(p.Errors())
 			continue
 		}
 
@@ -65,7 +65,7 @@ func Start(in io.Reader, out io.Writer) {
 	}
 }
 
-func PrintParserErrors(out io.Writer, errors []string) {
+func PrintParserErrors(errors []string) {
 	for _, msg := range errors {
 		fmt.Printf("  %s\n", msg)
 	}
