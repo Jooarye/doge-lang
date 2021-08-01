@@ -21,9 +21,15 @@ const (
 	MINUS    = "-"
 	BANG     = "!"
 	ASTERISK = "*"
+	AND      = "&"
+	PIPE     = "|"
+	CARET    = "^"
 	SLASH    = "/"
 	LT       = "<"
 	GT       = ">"
+	POWER    = "**"
+	SHIFTR   = ">>"
+	SHIFTL   = "<<"
 
 	// Comparasion
 	EQUAL   = "=="

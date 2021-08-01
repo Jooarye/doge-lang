@@ -27,8 +27,14 @@ var precedences = map[token.TokenType]int{
 	token.GT:       LESS_GREATER,
 	token.PLUS:     SUM,
 	token.MINUS:    SUM,
+	token.AND:      SUM,
+	token.PIPE:     SUM,
+	token.SHIFTR:   SUM,
+	token.SHIFTL:   SUM,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
+	token.CARET:    PRODUCT,
+	token.POWER:    PRODUCT,
 	token.LPAREN:   CALL,
 	token.LBRAKET:  INDEX,
 }
@@ -72,10 +78,16 @@ func New(l *lexer.Lexer) *Parser {
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.RegisterInfix(token.PLUS, p.ParseInfixExpression)
 	p.RegisterInfix(token.MINUS, p.ParseInfixExpression)
+	p.RegisterInfix(token.AND, p.ParseInfixExpression)
+	p.RegisterInfix(token.PIPE, p.ParseInfixExpression)
+	p.RegisterInfix(token.SHIFTL, p.ParseInfixExpression)
+	p.RegisterInfix(token.SHIFTR, p.ParseInfixExpression)
 	p.RegisterInfix(token.SLASH, p.ParseInfixExpression)
 	p.RegisterInfix(token.ASTERISK, p.ParseInfixExpression)
+	p.RegisterInfix(token.CARET, p.ParseInfixExpression)
 	p.RegisterInfix(token.EQUAL, p.ParseInfixExpression)
 	p.RegisterInfix(token.UNEQUAL, p.ParseInfixExpression)
+	p.RegisterInfix(token.POWER, p.ParseInfixExpression)
 	p.RegisterInfix(token.LT, p.ParseInfixExpression)
 	p.RegisterInfix(token.GT, p.ParseInfixExpression)
 	p.RegisterInfix(token.LPAREN, p.ParseCallExpression)

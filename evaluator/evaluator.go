@@ -4,6 +4,7 @@ import (
 	"doge/ast"
 	"doge/object"
 	"fmt"
+	"math"
 )
 
 var (
@@ -30,8 +31,6 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		env.Set(node.Name.Value, val)
 	case *ast.Identifier:
 		return EvalIdentifier(node, env)
-
-	// Infix
 	case *ast.InfixExpression:
 		left := Eval(node.Left, env)
 		if IsError(left) {
@@ -44,7 +43,6 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 		return EvalInfixExpression(node.Operator, left, right)
 
-	// Prefix
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env)
 		if IsError(right) {
@@ -74,8 +72,6 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 
 		return ApplyFunction(function, args)
-
-	// Expressions
 	case *ast.HashLiteral:
 		return EvalHashLiteral(node, env)
 	case *ast.IntegerLiteral:
@@ -309,8 +305,20 @@ func EvalIntegerInfixExpression(operator string, left, right object.Object) obje
 		return &object.Integer{Value: leftVal - rightVal}
 	case "*":
 		return &object.Integer{Value: leftVal * rightVal}
+	case "^":
+		return &object.Integer{Value: leftVal ^ rightVal}
 	case "/":
 		return &object.Integer{Value: leftVal / rightVal}
+	case "**":
+		return &object.Integer{Value: int64(math.Pow(float64(leftVal), float64(rightVal)))}
+	case "&":
+		return &object.Integer{Value: leftVal & rightVal}
+	case "|":
+		return &object.Integer{Value: leftVal | rightVal}
+	case "<<":
+		return &object.Integer{Value: leftVal << rightVal}
+	case ">>":
+		return &object.Integer{Value: leftVal >> rightVal}
 	case "<":
 		return NativeBoolToBooleanObject(leftVal < rightVal)
 	case ">":

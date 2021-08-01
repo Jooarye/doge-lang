@@ -68,4 +68,26 @@ var builtins = map[string]*object.Builtin{
 			return &object.Integer{Value: int64(len(out))}
 		},
 	},
+	"sum": &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return NewError("argument to `sum` must be array.")
+			}
+			array, ok := args[0].(*object.Array)
+			if !ok {
+				return NewError("argument to `sum` must be array. got=%T", args[0])
+			}
+
+			value := int64(0)
+
+			for _, elm := range array.Elements {
+				if elm.Type() == object.INTEGER_OBJ {
+					intObj := elm.(*object.Integer)
+					value += intObj.Value
+				}
+			}
+
+			return &object.Integer{Value: value}
+		},
+	},
 }
