@@ -34,6 +34,10 @@ const (
 	// Comparasion
 	EQUAL   = "=="
 	UNEQUAL = "!="
+	LTEQ    = "<="
+	GTEQ    = ">="
+	LAND    = "&&"
+	LOR     = "||"
 
 	// Syntax Characters
 	COMMA     = ","

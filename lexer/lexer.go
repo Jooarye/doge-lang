@@ -88,6 +88,11 @@ func (l *Lexer) NextToken() token.Token {
 			l.ReadChar()
 			literal := string(ch) + string(l.ch)
 			tok = token.Token{Type: token.SHIFTL, Literal: literal}
+		} else if l.PeekChar() == '=' {
+			ch := l.ch
+			l.ReadChar()
+			literal := string(ch) + string(l.ch)
+			tok = token.Token{Type: token.LTEQ, Literal: literal}
 		} else {
 			tok = NewToken(token.LT, l.ch)
 		}
@@ -97,15 +102,34 @@ func (l *Lexer) NextToken() token.Token {
 			l.ReadChar()
 			literal := string(ch) + string(l.ch)
 			tok = token.Token{Type: token.SHIFTR, Literal: literal}
+		} else if l.PeekChar() == '=' {
+			ch := l.ch
+			l.ReadChar()
+			literal := string(ch) + string(l.ch)
+			tok = token.Token{Type: token.GTEQ, Literal: literal}
 		} else {
 			tok = NewToken(token.GT, l.ch)
 		}
 	case '^':
 		tok = NewToken(token.CARET, l.ch)
 	case '&':
-		tok = NewToken(token.AND, l.ch)
+		if l.PeekChar() == '&' {
+			ch := l.ch
+			l.ReadChar()
+			literal := string(ch) + string(l.ch)
+			tok = token.Token{Type: token.LAND, Literal: literal}
+		} else {
+			tok = NewToken(token.AND, l.ch)
+		}
 	case '|':
-		tok = NewToken(token.PIPE, l.ch)
+		if l.PeekChar() == '|' {
+			ch := l.ch
+			l.ReadChar()
+			literal := string(ch) + string(l.ch)
+			tok = token.Token{Type: token.LOR, Literal: literal}
+		} else {
+			tok = NewToken(token.PIPE, l.ch)
+		}
 	case ';':
 		tok = NewToken(token.SEMICOLON, l.ch)
 	case ':':

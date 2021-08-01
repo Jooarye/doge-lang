@@ -287,6 +287,14 @@ func EvalInfixExpression(operator string, left, right object.Object) object.Obje
 		return NativeBoolToBooleanObject(left == right)
 	case operator == "!=":
 		return NativeBoolToBooleanObject(left != right)
+	case operator == "&&":
+		leftVal := left == TRUE
+		rightVal := right == TRUE
+		return NativeBoolToBooleanObject(leftVal && rightVal)
+	case operator == "||":
+		leftVal := left == TRUE
+		rightVal := right == TRUE
+		return NativeBoolToBooleanObject(leftVal || rightVal)
 	case left.Type() != right.Type():
 		return NewError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
 	default:
@@ -319,10 +327,18 @@ func EvalIntegerInfixExpression(operator string, left, right object.Object) obje
 		return &object.Integer{Value: leftVal << rightVal}
 	case ">>":
 		return &object.Integer{Value: leftVal >> rightVal}
+	case "&&":
+		return NativeBoolToBooleanObject((leftVal > 0) && (rightVal > 0))
+	case "||":
+		return NativeBoolToBooleanObject((leftVal > 0) || (rightVal > 0))
 	case "<":
 		return NativeBoolToBooleanObject(leftVal < rightVal)
 	case ">":
 		return NativeBoolToBooleanObject(leftVal > rightVal)
+	case "<=":
+		return NativeBoolToBooleanObject(leftVal <= rightVal)
+	case ">=":
+		return NativeBoolToBooleanObject(leftVal >= rightVal)
 	case "!=":
 		return NativeBoolToBooleanObject(leftVal != rightVal)
 	case "==":
