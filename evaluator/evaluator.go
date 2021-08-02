@@ -42,7 +42,6 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 
 		return EvalInfixExpression(node.Operator, left, right)
-
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env)
 		if IsError(right) {
@@ -370,7 +369,7 @@ func EvalWhileExpression(we *ast.WhileExpression, env *object.Environment) objec
 
 	for IsTruthy(condition) {
 		evaluated = Eval(we.Consequence, env)
-		if IsError(evaluated) {
+		if IsError(evaluated) || evaluated.Type() == object.RETURN_VALUE_OBJ {
 			return evaluated
 		}
 
