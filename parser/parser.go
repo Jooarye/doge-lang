@@ -21,8 +21,6 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
-	token.LAND:     EQUALS,
-	token.LOR:      EQUALS,
 	token.EQUAL:    EQUALS,
 	token.UNEQUAL:  EQUALS,
 	token.LT:       LESS_GREATER,
@@ -41,6 +39,8 @@ var precedences = map[token.TokenType]int{
 	token.POWER:    PRODUCT,
 	token.LPAREN:   CALL,
 	token.LBRAKET:  INDEX,
+	token.LAND:     EQUALS,
+	token.LOR:      EQUALS,
 }
 
 type (
@@ -76,6 +76,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.RegisterPrefix(token.LBRACE, p.ParseHashLiteral)
 	p.RegisterPrefix(token.IDENT, p.ParseIdentifier)
 	p.RegisterPrefix(token.IF, p.ParseIfExpression)
+	p.RegisterPrefix(token.WHILE, p.ParseWhileExpression)
 	p.RegisterPrefix(token.FALSE, p.ParseBoolean)
 	p.RegisterPrefix(token.TRUE, p.ParseBoolean)
 
@@ -314,6 +315,29 @@ func (p *Parser) ParseIntegerLiteral() ast.Expression {
 	lit.Value = value
 
 	return lit
+}
+
+func (p *Parser) ParseWhileExpression() ast.Expression {
+	expression := &ast.WhileExpression{Token: p.curToken}
+
+	if !p.ExpectPeek(token.LPAREN) {
+		return nil
+	}
+
+	p.NextToken()
+	expression.Condition = p.ParseExpression(LOWEST)
+
+	if !p.ExpectPeek(token.RPAREN) {
+		return nil
+	}
+
+	if !p.ExpectPeek(token.LBRACE) {
+		return nil
+	}
+
+	expression.Consequence = p.ParseBlockStatement()
+
+	return expression
 }
 
 func (p *Parser) ParseIfExpression() ast.Expression {
