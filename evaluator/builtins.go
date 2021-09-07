@@ -8,8 +8,10 @@ import (
 	"strings"
 )
 
-var builtins = map[string]*object.Builtin{
-	"append": &object.Builtin{
+var builtins = map[string]*object.Builtin{}
+
+func InitBuiltins() {
+	builtins["append"] = &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 2 {
 				return NewError("wrong number of arguments. got=%d, want=2", len(args))
@@ -23,14 +25,39 @@ var builtins = map[string]*object.Builtin{
 
 			return &object.Null{}
 		},
-	},
-	"print": &object.Builtin{
+	}
+	builtins["remove"] = &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 2 {
+				return NewError("wrong number of arguments. got=%d, want=2", len(args))
+			}
+			if args[0].Type() != object.ARRAY_OBJ {
+				return NewError("argument to `remove` must be ARRAY, got %s", args[0].Type())
+			}
+			if args[1].Type() != object.INTEGER_OBJ {
+				return NewError("second argument to `remove` must be INTEGER. got=%s", args[1].Type())
+			}
+
+			index := args[1].(*object.Integer)
+			arr := args[0].(*object.Array)
+
+			if int64(len(arr.Elements)) <= index.Value {
+				return NewError("Index out of bounds!")
+			}
+
+			obj := arr.Elements[index.Value]
+			arr.Elements = append(arr.Elements[:index.Value], arr.Elements[index.Value+1:]...)
+
+			return obj
+		},
+	}
+	builtins["print"] = &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) < 1 {
 				return NewError("print needs at least one argument. got=%d", len(args))
 			}
 
-			elements := []string{}
+			var elements []string
 			for _, arg := range args {
 				elements = append(elements, arg.Inspect())
 			}
@@ -40,8 +67,8 @@ var builtins = map[string]*object.Builtin{
 			fmt.Println(out)
 			return &object.Null{}
 		},
-	},
-	"len": &object.Builtin{
+	}
+	builtins["len"] = &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("wrong number of arguments. got=%d, want=1", len(args))
@@ -58,8 +85,8 @@ var builtins = map[string]*object.Builtin{
 				return NewError("argument to `len` not supported, got=%s", args[0].Type())
 			}
 		},
-	},
-	"sum": &object.Builtin{
+	}
+	builtins["sum"] = &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("argument to `sum` must be array.")
@@ -80,8 +107,30 @@ var builtins = map[string]*object.Builtin{
 
 			return &object.Integer{Value: value}
 		},
-	},
-	"min": &object.Builtin{
+	}
+	builtins["sumf"] = &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return NewError("argument to `sum` must be array.")
+			}
+			array, ok := args[0].(*object.Array)
+			if !ok {
+				return NewError("argument to `sum` must be array. got=%T", args[0])
+			}
+
+			value := float64(0)
+
+			for _, elm := range array.Elements {
+				if elm.Type() == object.FLOAT_OBJ {
+					floatObj := elm.(*object.Float)
+					value += floatObj.Value
+				}
+			}
+
+			return &object.Float{Value: value}
+		},
+	}
+	builtins["min"] = &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("argument to `sum` must be array.")
@@ -104,8 +153,32 @@ var builtins = map[string]*object.Builtin{
 
 			return &object.Integer{Value: value}
 		},
-	},
-	"max": &object.Builtin{
+	}
+	builtins["minf"] = &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return NewError("argument to `sum` must be array.")
+			}
+			array, ok := args[0].(*object.Array)
+			if !ok {
+				return NewError("argument to `sum` must be array. got=%T", args[0])
+			}
+
+			value := math.MaxFloat64
+
+			for _, elm := range array.Elements {
+				if elm.Type() == object.FLOAT_OBJ {
+					floatObj := elm.(*object.Float)
+					if floatObj.Value < value {
+						value = floatObj.Value
+					}
+				}
+			}
+
+			return &object.Float{Value: value}
+		},
+	}
+	builtins["max"] = &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("argument to `sum` must be array.")
@@ -128,8 +201,32 @@ var builtins = map[string]*object.Builtin{
 
 			return &object.Integer{Value: value}
 		},
-	},
-	"int": &object.Builtin{
+	}
+	builtins["maxf"] = &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return NewError("argument to `sum` must be array.")
+			}
+			array, ok := args[0].(*object.Array)
+			if !ok {
+				return NewError("argument to `sum` must be array. got=%T", args[0])
+			}
+
+			value := float64(0)
+
+			for _, elm := range array.Elements {
+				if elm.Type() == object.FLOAT_OBJ {
+					floatObj := elm.(*object.Float)
+					if floatObj.Value > value {
+						value = floatObj.Value
+					}
+				}
+			}
+
+			return &object.Float{Value: value}
+		},
+	}
+	builtins["int"] = &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("expected 1 argument. got=%d", len(args))
@@ -157,8 +254,8 @@ var builtins = map[string]*object.Builtin{
 
 			return NewError("argument to int must be string or float. got=%s", args[0].Type())
 		},
-	},
-	"float": &object.Builtin{
+	}
+	builtins["float"] = &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("expected 1 argument. got=%d", len(args))
@@ -186,7 +283,41 @@ var builtins = map[string]*object.Builtin{
 
 			return NewError("argument to int must be string or int. got=%s", args[0].Type())
 		},
-	},
-	// TODO: add a map function
-	// TODO: add a filter function
+	}
+	builtins["map"] = &object.Builtin{
+		Fn: mapBuiltin,
+	}
+}
+
+func mapBuiltin(args ...object.Object) object.Object {
+	if len(args) != 2 {
+		return NewError("wrong number of arguments. got=%d, want=2", len(args))
+	}
+	if args[0].Type() != object.ARRAY_OBJ {
+		return NewError("argument to `map` must be ARRAY, got %s", args[0].Type())
+	}
+	if args[1].Type() != object.FUNCTION_OBJ && args[1].Type() != object.BUILTIN_OBJ {
+		return NewError("second argument to `map` must be FUNCTION, got=%s", args[1].Type())
+	}
+
+	var elements []object.Object
+
+	arr := args[0].(*object.Array)
+	if args[1].Type() == object.FUNCTION_OBJ {
+		funct := args[1].(*object.Function)
+
+		for _, elm := range arr.Elements {
+			res := RunFunction(funct, []object.Object{elm})
+			elements = append(elements, res)
+		}
+	} else {
+		bi := args[1].(*object.Builtin)
+
+		for _, elm := range arr.Elements {
+			res := bi.Fn(elm)
+			elements = append(elements, res)
+		}
+	}
+
+	return &object.Array{Elements: elements}
 }

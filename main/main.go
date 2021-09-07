@@ -31,6 +31,7 @@ func main() {
 		}
 
 		env := object.NewEnvironment()
+		evaluator.InitBuiltins()
 		_ = evaluator.Eval(program, env)
 	} else {
 		repl.Start(os.Stdin, os.Stdin)
