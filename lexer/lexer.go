@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"doge/token"
+	"strings"
 )
 
 type Lexer struct {
@@ -155,6 +156,11 @@ func (l *Lexer) NextToken() token.Token {
 		} else if IsDigit(l.ch) {
 			tok.Type = token.INT
 			tok.Literal = l.ReadNumber()
+
+			if strings.Contains(tok.Literal, ".") {
+				tok.Type = token.FLOAT
+			}
+
 			return tok
 		} else {
 			tok = NewToken(token.ILLEGAL, l.ch)
@@ -175,7 +181,13 @@ func (l *Lexer) ReadIdentifier() string {
 
 func (l *Lexer) ReadNumber() string {
 	position := l.position
-	for IsDigit(l.ch) {
+	comma := false
+
+	for IsDigit(l.ch) || (l.ch == '.' && !comma) {
+		if l.ch == '.' {
+			comma = true
+		}
+
 		l.ReadChar()
 	}
 	return l.input[position:l.position]

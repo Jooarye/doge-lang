@@ -12,6 +12,7 @@ type ObjectType string
 
 const (
 	INTEGER_OBJ      = "INTEGER"
+	FLOAT_OBJ        = "FLOAT"
 	BOOLEAN_OBJ      = "BOOLEAN"
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
 	NULL_OBJ         = "NULL"
@@ -28,12 +29,12 @@ type Object interface {
 	Inspect() string
 }
 
-type Integer struct {
-	Value int64
-}
-
 type Hashable interface {
 	HashKey() HashKey
+}
+
+type Integer struct {
+	Value int64
 }
 
 func (i *Integer) Type() ObjectType {
@@ -41,6 +42,17 @@ func (i *Integer) Type() ObjectType {
 }
 func (i *Integer) Inspect() string {
 	return fmt.Sprintf("%d", i.Value)
+}
+
+type Float struct {
+	Value float64
+}
+
+func (f *Float) Type() ObjectType {
+	return FLOAT_OBJ
+}
+func (f *Float) Inspect() string {
+	return fmt.Sprintf("%f", f.Value)
 }
 
 type Boolean struct {

@@ -77,6 +77,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return EvalHashLiteral(node, env)
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
+	case *ast.FloatLiteral:
+		return &object.Float{Value: node.Value}
 	case *ast.Boolean:
 		return NativeBoolToBooleanObject(node.Value)
 	case *ast.ArrayLiteral:
@@ -268,6 +270,8 @@ func EvalInfixExpression(operator string, left, right object.Object) object.Obje
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return EvalIntegerInfixExpression(operator, left, right)
+	case left.Type() == object.FLOAT_OBJ && right.Type() == object.FLOAT_OBJ:
+		return EvalFloatInfixExpression(operator, left, right)
 	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
 		return EvalStringInfixExpression(operator, left, right)
 	case operator == "==":
@@ -314,6 +318,42 @@ func EvalIntegerInfixExpression(operator string, left, right object.Object) obje
 		return &object.Integer{Value: leftVal << rightVal}
 	case ">>":
 		return &object.Integer{Value: leftVal >> rightVal}
+	case "&&":
+		return NativeBoolToBooleanObject((leftVal > 0) && (rightVal > 0))
+	case "||":
+		return NativeBoolToBooleanObject((leftVal > 0) || (rightVal > 0))
+	case "<":
+		return NativeBoolToBooleanObject(leftVal < rightVal)
+	case ">":
+		return NativeBoolToBooleanObject(leftVal > rightVal)
+	case "<=":
+		return NativeBoolToBooleanObject(leftVal <= rightVal)
+	case ">=":
+		return NativeBoolToBooleanObject(leftVal >= rightVal)
+	case "!=":
+		return NativeBoolToBooleanObject(leftVal != rightVal)
+	case "==":
+		return NativeBoolToBooleanObject(leftVal == rightVal)
+	default:
+		return NewError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+	}
+}
+
+func EvalFloatInfixExpression(operator string, left, right object.Object) object.Object {
+	leftVal := left.(*object.Float).Value
+	rightVal := right.(*object.Float).Value
+
+	switch operator {
+	case "+":
+		return &object.Float{Value: leftVal + rightVal}
+	case "-":
+		return &object.Float{Value: leftVal - rightVal}
+	case "*":
+		return &object.Float{Value: leftVal * rightVal}
+	case "/":
+		return &object.Float{Value: leftVal / rightVal}
+	case "**":
+		return &object.Float{Value: math.Pow(leftVal, rightVal)}
 	case "&&":
 		return NativeBoolToBooleanObject((leftVal > 0) && (rightVal > 0))
 	case "||":
