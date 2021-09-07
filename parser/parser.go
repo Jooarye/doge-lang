@@ -225,8 +225,6 @@ func (p *Parser) ParseExpressionList(end token.TokenType) []ast.Expression {
 
 func (p *Parser) ParseStatement() ast.Statement {
 	switch p.curToken.Type {
-	case token.LET:
-		return p.ParseLetStatement()
 	case token.RETURN:
 		return p.ParseReturnStatement()
 	default:
@@ -239,7 +237,22 @@ func (p *Parser) ParseStringLiteral() ast.Expression {
 }
 
 func (p *Parser) ParseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
+	if p.PeekTokenIs(token.ASSIGN) {
+		p.NextToken()
+		expression := &ast.AssignExpression{
+			Token: p.curToken,
+			Left:  ident,
+		}
+
+		precedence := p.CurPrecedence()
+		p.NextToken()
+		expression.Right = p.ParseExpression(precedence)
+
+		return expression
+	}
+	return ident
 }
 
 func (p *Parser) ParseExpression(precedence int) ast.Expression {
@@ -294,6 +307,18 @@ func (p *Parser) ParseInfixExpression(left ast.Expression) ast.Expression {
 		Token:    p.curToken,
 		Operator: p.curToken.Literal,
 		Left:     left,
+	}
+
+	precedence := p.CurPrecedence()
+	p.NextToken()
+	expression.Right = p.ParseExpression(precedence)
+
+	return expression
+}
+
+func (p *Parser) ParseAssignExpression() ast.Expression {
+	expression := &ast.AssignExpression{
+		Token: p.curToken,
 	}
 
 	precedence := p.CurPrecedence()

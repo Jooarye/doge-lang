@@ -33,6 +33,8 @@ const DOGE = `          ▄              ▄
 
 const PROMPT = ">>> "
 
+var history []string
+
 func Start(in io.Reader, out io.Writer) {
 	fmt.Println(DOGE)
 
@@ -62,6 +64,8 @@ func Start(in io.Reader, out io.Writer) {
 		if evaluated != nil && evaluated.Type() != object.NULL_OBJ {
 			fmt.Println(evaluated.Inspect())
 		}
+
+		history = append(history, line)
 	}
 }
 

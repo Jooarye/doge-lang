@@ -42,6 +42,17 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 
 		return EvalInfixExpression(node.Operator, left, right)
+	case *ast.AssignExpression:
+		idt, ok := node.Left.(*ast.Identifier)
+		if !ok {
+			return NewError("cannot assign to non identifier!")
+		}
+		right := Eval(node.Right, env)
+		if IsError(right) {
+			return right
+		}
+
+		env.Set(idt.Value, right)
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env)
 		if IsError(right) {
@@ -166,7 +177,7 @@ func EvalArrayIndexExpression(array, index object.Object) object.Object {
 	}
 
 	if idx < 0 || idx > max {
-		return NULL
+		return NewError("index out of bounds")
 	}
 
 	return arrayObj.Elements[idx]

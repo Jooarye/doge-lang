@@ -192,6 +192,28 @@ func (ie *InfixExpression) String() string {
 	return out.String()
 }
 
+type AssignExpression struct {
+	Token token.Token
+	Left  Expression
+	Right Expression
+}
+
+func (ae *AssignExpression) expressionNode() {}
+func (ae *AssignExpression) TokenLiteral() string {
+	return ae.Token.Literal
+}
+func (ae *AssignExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(ae.Left.String())
+	out.WriteString(" = ")
+	out.WriteString(ae.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
 type Boolean struct {
 	Token token.Token
 	Value bool

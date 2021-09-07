@@ -187,4 +187,6 @@ var builtins = map[string]*object.Builtin{
 			return NewError("argument to int must be string or int. got=%s", args[0].Type())
 		},
 	},
+	// TODO: add a map function
+	// TODO: add a filter function
 }
