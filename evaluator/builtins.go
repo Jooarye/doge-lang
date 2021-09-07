@@ -3,6 +3,7 @@ package evaluator
 import (
 	"doge/object"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -18,6 +19,8 @@ var builtins = map[string]*object.Builtin{
 				return &object.Integer{Value: int64(len(arg.Value))}
 			case *object.Array:
 				return &object.Integer{Value: int64(len(arg.Elements))}
+			case *object.Hash:
+				return &object.Integer{Value: int64(len(arg.Pairs))}
 			default:
 				return NewError("argument to `len` not supported, got=%s", args[0].Type())
 			}
@@ -33,13 +36,9 @@ var builtins = map[string]*object.Builtin{
 			}
 
 			arr := args[0].(*object.Array)
-			length := len(arr.Elements)
+			arr.Elements = append(arr.Elements, args[1])
 
-			newElements := make([]object.Object, length+1, length+1)
-			copy(newElements, arr.Elements)
-			newElements[length] = args[1]
-
-			return &object.Array{Elements: newElements}
+			return &object.Null{}
 		},
 	},
 	"print": &object.Builtin{
@@ -84,6 +83,54 @@ var builtins = map[string]*object.Builtin{
 				if elm.Type() == object.INTEGER_OBJ {
 					intObj := elm.(*object.Integer)
 					value += intObj.Value
+				}
+			}
+
+			return &object.Integer{Value: value}
+		},
+	},
+	"min": &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return NewError("argument to `sum` must be array.")
+			}
+			array, ok := args[0].(*object.Array)
+			if !ok {
+				return NewError("argument to `sum` must be array. got=%T", args[0])
+			}
+
+			value := int64(math.MaxInt64)
+
+			for _, elm := range array.Elements {
+				if elm.Type() == object.INTEGER_OBJ {
+					intObj := elm.(*object.Integer)
+					if intObj.Value < value {
+						value = intObj.Value
+					}
+				}
+			}
+
+			return &object.Integer{Value: value}
+		},
+	},
+	"max": &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return NewError("argument to `sum` must be array.")
+			}
+			array, ok := args[0].(*object.Array)
+			if !ok {
+				return NewError("argument to `sum` must be array. got=%T", args[0])
+			}
+
+			value := int64(0)
+
+			for _, elm := range array.Elements {
+				if elm.Type() == object.INTEGER_OBJ {
+					intObj := elm.(*object.Integer)
+					if intObj.Value > value {
+						value = intObj.Value
+					}
 				}
 			}
 
