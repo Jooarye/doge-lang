@@ -4,6 +4,7 @@ import (
 	"doge/object"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 )
 
@@ -126,6 +127,64 @@ var builtins = map[string]*object.Builtin{
 			}
 
 			return &object.Integer{Value: value}
+		},
+	},
+	"int": &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return NewError("expected 1 argument. got=%d", len(args))
+			}
+
+			if args[0].Type() == object.FLOAT_OBJ {
+				floatObj, ok := args[0].(*object.Float)
+				if !ok {
+					return NewError("argument cannot be interpreted as FLOAT")
+				}
+
+				return &object.Integer{Value: int64(floatObj.Value)}
+			} else if args[0].Type() == object.STRING_OBJ {
+				stringObj, ok := args[0].(*object.String)
+				if !ok {
+					return NewError("argument cannot be interpreted as STRING")
+				}
+				val, err := strconv.ParseInt(stringObj.Value, 10, 64)
+				if err != nil {
+					return NewError("couldn't parse string as integer")
+				}
+
+				return &object.Integer{Value: val}
+			}
+
+			return NewError("argument to int must be string or float. got=%s", args[0].Type())
+		},
+	},
+	"float": &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return NewError("expected 1 argument. got=%d", len(args))
+			}
+
+			if args[0].Type() == object.INTEGER_OBJ {
+				intObj, ok := args[0].(*object.Integer)
+				if !ok {
+					return NewError("argument cannot be interpreted as FLOAT")
+				}
+
+				return &object.Float{Value: float64(intObj.Value)}
+			} else if args[0].Type() == object.STRING_OBJ {
+				stringObj, ok := args[0].(*object.String)
+				if !ok {
+					return NewError("argument cannot be interpreted as STRING")
+				}
+				val, err := strconv.ParseFloat(stringObj.Value, 64)
+				if err != nil {
+					return NewError("couldn't parse string as float")
+				}
+
+				return &object.Float{Value: val}
+			}
+
+			return NewError("argument to int must be string or int. got=%s", args[0].Type())
 		},
 	},
 }

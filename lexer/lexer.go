@@ -153,7 +153,7 @@ func (l *Lexer) NextToken() token.Token {
 			tok.Literal = l.ReadIdentifier()
 			tok.Type = token.LookupIdent(tok.Literal)
 			return tok
-		} else if IsDigit(l.ch) {
+		} else if IsDigit(l.ch) || l.ch == '.' {
 			tok.Type = token.INT
 			tok.Literal = l.ReadNumber()
 
