@@ -23,12 +23,6 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return Eval(node.Expression, env)
 	case *ast.StringLiteral:
 		return &object.String{Value: node.Value}
-	case *ast.LetStatement:
-		val := Eval(node.Value, env)
-		if IsError(val) {
-			return val
-		}
-		env.Set(node.Name.Value, val)
 	case *ast.Identifier:
 		return EvalIdentifier(node, env)
 	case *ast.InfixExpression:
@@ -83,7 +77,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return args[0]
 		}
 
-		return ApplyFunction(function, args)
+		return ApplyFunction(function, args, env)
 	case *ast.HashLiteral:
 		return EvalHashLiteral(node, env)
 	case *ast.IntegerLiteral:
@@ -197,12 +191,12 @@ func EvalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 	return result
 }
 
-func ApplyFunction(fn object.Object, args []object.Object) object.Object {
+func ApplyFunction(fn object.Object, args []object.Object, env *object.Environment) object.Object {
 	switch fn := fn.(type) {
 	case *object.Function:
 		return RunFunction(fn, args)
 	case *object.Builtin:
-		return fn.Fn(args...)
+		return fn.Fn(env, args...)
 	default:
 		return NewError("not a function: %s", fn.Type())
 	}
@@ -387,13 +381,19 @@ func EvalFloatInfixExpression(operator string, left, right object.Object) object
 }
 
 func EvalStringInfixExpression(operator string, left, right object.Object) object.Object {
-	if operator != "+" {
-		return NewError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
-	}
-
 	leftVal := left.(*object.String).Value
 	rightVal := right.(*object.String).Value
-	return &object.String{Value: leftVal + rightVal}
+
+	switch operator {
+	case "+":
+		return &object.String{Value: leftVal + rightVal}
+	case "!=":
+		return NativeBoolToBooleanObject(leftVal != rightVal)
+	case "==":
+		return NativeBoolToBooleanObject(leftVal == rightVal)
+	default:
+		return NewError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+	}
 }
 
 func EvalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {

@@ -163,7 +163,7 @@ func (s *String) Inspect() string {
 	return s.Value
 }
 
-type BuiltinFunction func(args ...Object) Object
+type BuiltinFunction func(env *Environment, args ...Object) Object
 
 type Builtin struct {
 	Fn BuiltinFunction

@@ -1,8 +1,11 @@
 package evaluator
 
 import (
+	"doge/lexer"
 	"doge/object"
+	"doge/parser"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"strconv"
 	"strings"
@@ -12,7 +15,7 @@ var builtins = map[string]*object.Builtin{}
 
 func InitBuiltins() {
 	builtins["append"] = &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 2 {
 				return NewError("wrong number of arguments. got=%d, want=2", len(args))
 			}
@@ -27,7 +30,7 @@ func InitBuiltins() {
 		},
 	}
 	builtins["remove"] = &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 2 {
 				return NewError("wrong number of arguments. got=%d, want=2", len(args))
 			}
@@ -52,7 +55,7 @@ func InitBuiltins() {
 		},
 	}
 	builtins["print"] = &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) < 1 {
 				return NewError("print needs at least one argument. got=%d", len(args))
 			}
@@ -69,7 +72,7 @@ func InitBuiltins() {
 		},
 	}
 	builtins["len"] = &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("wrong number of arguments. got=%d, want=1", len(args))
 			}
@@ -87,7 +90,7 @@ func InitBuiltins() {
 		},
 	}
 	builtins["sum"] = &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("argument to `sum` must be array.")
 			}
@@ -109,7 +112,7 @@ func InitBuiltins() {
 		},
 	}
 	builtins["sumf"] = &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("argument to `sum` must be array.")
 			}
@@ -131,7 +134,7 @@ func InitBuiltins() {
 		},
 	}
 	builtins["min"] = &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("argument to `sum` must be array.")
 			}
@@ -155,7 +158,7 @@ func InitBuiltins() {
 		},
 	}
 	builtins["minf"] = &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("argument to `sum` must be array.")
 			}
@@ -179,7 +182,7 @@ func InitBuiltins() {
 		},
 	}
 	builtins["max"] = &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("argument to `sum` must be array.")
 			}
@@ -203,7 +206,7 @@ func InitBuiltins() {
 		},
 	}
 	builtins["maxf"] = &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("argument to `sum` must be array.")
 			}
@@ -227,7 +230,7 @@ func InitBuiltins() {
 		},
 	}
 	builtins["int"] = &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("expected 1 argument. got=%d", len(args))
 			}
@@ -256,7 +259,7 @@ func InitBuiltins() {
 		},
 	}
 	builtins["float"] = &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return NewError("expected 1 argument. got=%d", len(args))
 			}
@@ -287,9 +290,46 @@ func InitBuiltins() {
 	builtins["map"] = &object.Builtin{
 		Fn: mapBuiltin,
 	}
+	builtins["import"] = &object.Builtin{
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
+			if len(args) < 1 {
+				return NewError("import expected at least 1 argument. got=%d", len(args))
+			}
+
+			env.Set("__name__", &object.String{Value: "__import__"})
+			for _, arg := range args {
+				strObj, ok := arg.(*object.String)
+				if !ok {
+					env.Set("__name__", &object.String{Value: "__main__"})
+					return NewError("argument to import must be string. got=%s", arg.Type())
+				}
+
+				buf, err := ioutil.ReadFile(strObj.Value)
+				if err != nil {
+					env.Set("__name__", &object.String{Value: "__main__"})
+					return NewError("cannot import file '%s'", strObj.Value)
+				}
+
+				data := string(buf)
+				l := lexer.New(data)
+				p := parser.New(l)
+				program := p.ParseProgram()
+
+				if len(p.Errors()) != 0 {
+					env.Set("__name__", &object.String{Value: "__main__"})
+					return NewError("errors while importing file '%s'", strObj.Value)
+				}
+
+				_ = Eval(program, env)
+			}
+
+			env.Set("__name__", &object.String{Value: "__main__"})
+			return &object.Null{}
+		},
+	}
 }
 
-func mapBuiltin(args ...object.Object) object.Object {
+func mapBuiltin(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 2 {
 		return NewError("wrong number of arguments. got=%d, want=2", len(args))
 	}
@@ -314,7 +354,7 @@ func mapBuiltin(args ...object.Object) object.Object {
 		bi := args[1].(*object.Builtin)
 
 		for _, elm := range arr.Elements {
-			res := bi.Fn(elm)
+			res := bi.Fn(env, elm)
 			elements = append(elements, res)
 		}
 	}

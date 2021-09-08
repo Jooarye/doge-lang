@@ -31,6 +31,7 @@ func main() {
 		}
 
 		env := object.NewEnvironment()
+		env.Set("__name__", &object.String{Value: "__main__"})
 		evaluator.InitBuiltins()
 		_ = evaluator.Eval(program, env)
 	} else {

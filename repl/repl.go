@@ -40,6 +40,7 @@ func Start(in io.Reader, out io.Writer) {
 
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment()
+	env.Set("__name__", &object.String{Value: "__main__"})
 	evaluator.InitBuiltins()
 
 	for {
