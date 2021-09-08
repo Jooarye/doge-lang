@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"os"
+	"path"
 	"strconv"
 	"strings"
 )
@@ -304,7 +306,18 @@ func InitBuiltins() {
 					return NewError("argument to import must be string. got=%s", arg.Type())
 				}
 
-				buf, err := ioutil.ReadFile(strObj.Value)
+				filePath := fmt.Sprintf("%s.doge", strObj.Value)
+
+				if _, err := os.Stat(filePath); os.IsNotExist(err) {
+					root, ok := os.LookupEnv("DOGEROOT")
+					if !ok {
+						return NewError("couldn't find file")
+					}
+
+					filePath = path.Join(root, filePath)
+				}
+
+				buf, err := ioutil.ReadFile(filePath)
 				if err != nil {
 					env.Set("__name__", &object.String{Value: "__main__"})
 					return NewError("cannot import file '%s'", strObj.Value)

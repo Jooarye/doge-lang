@@ -5,7 +5,6 @@ import (
 	"doge/lexer"
 	"doge/object"
 	"doge/parser"
-	"doge/repl"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -27,7 +26,7 @@ func main() {
 		if len(p.Errors()) != 0 {
 			fmt.Println("Whoops such errors. Wow!!")
 			fmt.Println("Syntax Errors:")
-			repl.PrintParserErrors(p.Errors())
+			PrintParserErrors(p.Errors())
 		}
 
 		env := object.NewEnvironment()
@@ -35,6 +34,6 @@ func main() {
 		evaluator.InitBuiltins()
 		_ = evaluator.Eval(program, env)
 	} else {
-		repl.Start(os.Stdin, os.Stdin)
+		Start(os.Stdin, os.Stdin)
 	}
 }
