@@ -41,12 +41,13 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if !ok {
 			return NewError("cannot assign to non identifier!")
 		}
+
 		right := Eval(node.Right, env)
 		if IsError(right) {
 			return right
 		}
 
-		env.Set(idt.Value, right)
+		return EvalAssignExpression(node.TokenLiteral(), idt, right, env)
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env)
 		if IsError(right) {
@@ -106,6 +107,65 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return EvalIndexExpression(left, index)
 	}
 
+	return nil
+}
+
+func EvalAssignExpression(literal string, idt *ast.Identifier, right object.Object, env *object.Environment) object.Object {
+	val, ok := env.Get(idt.Value)
+
+	result := right
+
+	if literal != "=" {
+		if !ok {
+			return NewError("cannot assign to uninitialized identifier!")
+		}
+
+		if val.Type() != right.Type() {
+			return NewError("cannot use %s with types: %s and %s", literal, val.Type(), right.Type())
+		}
+
+		if val.Type() == object.INTEGER_OBJ {
+			lv := val.(*object.Integer)
+			rv := right.(*object.Integer)
+			switch literal {
+			case "-=":
+				result = &object.Integer{Value: lv.Value - rv.Value}
+			case "+=":
+				result = &object.Integer{Value: lv.Value + rv.Value}
+			case "*=":
+				result = &object.Integer{Value: lv.Value * rv.Value}
+			case "/=":
+				result = &object.Integer{Value: lv.Value / rv.Value}
+			default:
+				return NewError("Unknown assign operator %s", literal)
+			}
+		} else if val.Type() == object.FLOAT_OBJ {
+			lv := val.(*object.Float)
+			rv := right.(*object.Float)
+			switch literal {
+			case "-=":
+				result = &object.Float{Value: lv.Value - rv.Value}
+			case "+=":
+				result = &object.Float{Value: lv.Value + rv.Value}
+			case "*=":
+				result = &object.Float{Value: lv.Value * rv.Value}
+			case "/=":
+				result = &object.Float{Value: lv.Value / rv.Value}
+			default:
+				return NewError("Unknown assign operator %s", literal)
+			}
+		} else if val.Type() == object.STRING_OBJ {
+			lv := val.(*object.String)
+			rv := right.(*object.String)
+			if literal == "+=" {
+				result = &object.String{Value: lv.Value + rv.Value}
+			} else {
+				return NewError("Unknown assign operator %s", literal)
+			}
+		}
+	}
+
+	env.Set(idt.Value, result)
 	return nil
 }
 

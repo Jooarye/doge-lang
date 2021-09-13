@@ -60,9 +60,25 @@ func (l *Lexer) NextToken() token.Token {
 		tok.Type = token.STRING
 		tok.Literal = l.ReadString()
 	case '+':
-		tok = NewToken(token.PLUS, l.ch)
+		if l.PeekChar() == '=' {
+			l.ReadChar()
+			tok = token.Token{
+				Type:    token.ASSIGN,
+				Literal: "+=",
+			}
+		} else {
+			tok = NewToken(token.PLUS, l.ch)
+		}
 	case '-':
-		tok = NewToken(token.MINUS, l.ch)
+		if l.PeekChar() == '=' {
+			l.ReadChar()
+			tok = token.Token{
+				Type:    token.ASSIGN,
+				Literal: "-=",
+			}
+		} else {
+			tok = NewToken(token.MINUS, l.ch)
+		}
 	case '!':
 		if l.PeekChar() == '=' {
 			ch := l.ch
@@ -78,11 +94,25 @@ func (l *Lexer) NextToken() token.Token {
 			l.ReadChar()
 			literal := string(ch) + string(l.ch)
 			tok = token.Token{Type: token.POWER, Literal: literal}
+		} else if l.PeekChar() == '=' {
+			l.ReadChar()
+			tok = token.Token{
+				Type:    token.ASSIGN,
+				Literal: "*=",
+			}
 		} else {
 			tok = NewToken(token.ASTERISK, l.ch)
 		}
 	case '/':
-		tok = NewToken(token.SLASH, l.ch)
+		if l.PeekChar() == '=' {
+			l.ReadChar()
+			tok = token.Token{
+				Type:    token.ASSIGN,
+				Literal: "/=",
+			}
+		} else {
+			tok = NewToken(token.SLASH, l.ch)
+		}
 	case '<':
 		if l.PeekChar() == '<' {
 			ch := l.ch
