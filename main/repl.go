@@ -11,7 +11,7 @@ import (
 )
 
 var CommitId string
-var DogeVersion = "0.1-dev"
+var DogeVersion = "0.2-dev"
 
 var DOGE string = fmt.Sprintf("Doge v%s (commit: %s)", DogeVersion, CommitId)
 
