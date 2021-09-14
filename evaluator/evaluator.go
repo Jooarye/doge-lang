@@ -337,6 +337,8 @@ func EvalInfixExpression(operator string, left, right object.Object) object.Obje
 		return EvalIntegerInfixExpression(operator, left, right)
 	case left.Type() == object.FLOAT_OBJ && right.Type() == object.FLOAT_OBJ:
 		return EvalFloatInfixExpression(operator, left, right)
+	case IsNumeric(left) && IsNumeric(right):
+		return EvalMixedInfixExpression(operator, left, right)
 	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
 		return EvalStringInfixExpression(operator, left, right)
 	case operator == "==":
@@ -353,6 +355,42 @@ func EvalInfixExpression(operator string, left, right object.Object) object.Obje
 		return NativeBoolToBooleanObject(leftVal || rightVal)
 	case left.Type() != right.Type():
 		return NewError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
+	default:
+		return NewError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+	}
+}
+
+func EvalMixedInfixExpression(operator string, left, right object.Object) object.Object {
+	leftVal := ObjectToFloat(left)
+	rightVal := ObjectToFloat(right)
+
+	switch operator {
+	case "+":
+		return &object.Float{Value: leftVal + rightVal}
+	case "-":
+		return &object.Float{Value: leftVal - rightVal}
+	case "*":
+		return &object.Float{Value: leftVal * rightVal}
+	case "/":
+		return &object.Float{Value: leftVal / rightVal}
+	case "**":
+		return &object.Float{Value: math.Pow(leftVal, rightVal)}
+	case "&&":
+		return NativeBoolToBooleanObject((leftVal > 0) && (rightVal > 0))
+	case "||":
+		return NativeBoolToBooleanObject((leftVal > 0) || (rightVal > 0))
+	case "<":
+		return NativeBoolToBooleanObject(leftVal < rightVal)
+	case ">":
+		return NativeBoolToBooleanObject(leftVal > rightVal)
+	case "<=":
+		return NativeBoolToBooleanObject(leftVal <= rightVal)
+	case ">=":
+		return NativeBoolToBooleanObject(leftVal >= rightVal)
+	case "!=":
+		return NativeBoolToBooleanObject(leftVal != rightVal)
+	case "==":
+		return NativeBoolToBooleanObject(leftVal == rightVal)
 	default:
 		return NewError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
 	}
@@ -560,4 +598,19 @@ func IsError(obj object.Object) bool {
 
 func NewError(format string, a ...interface{}) *object.Error {
 	return &object.Error{Message: fmt.Sprintf(format, a...)}
+}
+
+func ObjectToFloat(obj object.Object) float64 {
+	switch obj := obj.(type) {
+	case *object.Integer:
+		return float64(obj.Value)
+	case *object.Float:
+		return obj.Value
+	}
+
+	return 0.0
+}
+
+func IsNumeric(obj object.Object) bool {
+	return obj.Type() == object.FLOAT_OBJ || obj.Type() == object.INTEGER_OBJ
 }
