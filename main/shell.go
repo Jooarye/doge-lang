@@ -7,28 +7,25 @@ import (
 	"doge/object"
 	"doge/parser"
 	"fmt"
-	"io"
+	"os"
 )
 
 var CommitId string
 var DogeVersion = "0.2-dev"
-
-var DOGE string = fmt.Sprintf("Doge v%s (commit: %s)", DogeVersion, CommitId)
-
-const PROMPT = ">>> "
+var DogeHeader string = fmt.Sprintf("Doge v%s (commit: %s)", DogeVersion, CommitId)
 
 var history []string
 
-func Start(in io.Reader, out io.Writer) {
-	fmt.Println(DOGE)
+func StartInteractiveShell() {
+	fmt.Println(DogeHeader)
 
-	scanner := bufio.NewScanner(in)
+	scanner := bufio.NewScanner(os.Stdin)
 	env := object.NewEnvironment()
 	env.Set("__name__", &object.String{Value: "__main__"})
 	evaluator.InitBuiltins()
 
 	for {
-		fmt.Printf(PROMPT)
+		fmt.Print(">>> ")
 		scanned := scanner.Scan()
 		if !scanned {
 			return
