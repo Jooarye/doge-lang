@@ -166,7 +166,7 @@ func EvalAssignExpression(literal string, idt *ast.Identifier, right object.Obje
 	}
 
 	env.Set(idt.Value, result)
-	return nil
+	return &object.Null{}
 }
 
 func EvalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {
