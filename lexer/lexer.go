@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"doge/token"
+	"strconv"
 	"strings"
 )
 
@@ -11,6 +12,8 @@ type Lexer struct {
 	readPosition int
 	ch           byte
 }
+
+var HEX_CHARS string = "0123456789abcdef"
 
 func New(input string) *Lexer {
 	l := &Lexer{input: input}
@@ -175,6 +178,21 @@ func (l *Lexer) NextToken() token.Token {
 		tok = NewToken(token.LBRACE, l.ch)
 	case '}':
 		tok = NewToken(token.RBRACE, l.ch)
+	case '0':
+		if l.PeekChar() == 'x' {
+			l.ReadChar()
+			l.ReadChar()
+			tok.Type = token.INT
+			res, err := strconv.ParseInt(l.ReadHexNumber(), 16, 64)
+			if err != nil {
+				tok.Literal = "0"
+			} else {
+				tok.Literal = strconv.Itoa(int(res))
+			}
+		} else {
+			tok.Type = token.INT
+			tok.Literal = l.ReadNumber()
+		}
 	case 0:
 		tok.Literal = ""
 		tok.Type = token.EOF
@@ -220,6 +238,16 @@ func (l *Lexer) ReadNumber() string {
 
 		l.ReadChar()
 	}
+	return l.input[position:l.position]
+}
+
+func (l *Lexer) ReadHexNumber() string {
+	position := l.position
+
+	for strings.Contains(HEX_CHARS, string(l.ch)) {
+		l.ReadChar()
+	}
+
 	return l.input[position:l.position]
 }
 
