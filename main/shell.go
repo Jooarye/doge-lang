@@ -11,7 +11,7 @@ import (
 )
 
 var CommitId string
-var DogeVersion = "0.3-dev"
+var DogeVersion = "0.4-dev"
 var DogeHeader string = fmt.Sprintf("Doge v%s (commit: %s)", DogeVersion, CommitId)
 
 var history []string
