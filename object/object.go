@@ -15,6 +15,7 @@ const (
 	FLOAT_OBJ        = "FLOAT"
 	BOOLEAN_OBJ      = "BOOLEAN"
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
+	BREAK_OBJ        = "BREAK"
 	NULL_OBJ         = "NULL"
 	ERROR_OBJ        = "ERROR"
 	FUNCTION_OBJ     = "FUNCTION"
@@ -84,6 +85,16 @@ func (rv *ReturnValue) Type() ObjectType {
 }
 func (rv *ReturnValue) Inspect() string {
 	return rv.Value.Inspect()
+}
+
+type Break struct {
+}
+
+func (br *Break) Type() ObjectType {
+	return BREAK_OBJ
+}
+func (br *Break) Inspect() string {
+	return "BREAK"
 }
 
 type Error struct {

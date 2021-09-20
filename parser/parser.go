@@ -78,6 +78,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.RegisterPrefix(token.IDENT, p.ParseIdentifier)
 	p.RegisterPrefix(token.IF, p.ParseIfExpression)
 	p.RegisterPrefix(token.WHILE, p.ParseWhileExpression)
+	p.RegisterPrefix(token.FOR, p.ParseForExpression)
 	p.RegisterPrefix(token.FALSE, p.ParseBoolean)
 	p.RegisterPrefix(token.TRUE, p.ParseBoolean)
 
@@ -227,6 +228,8 @@ func (p *Parser) ParseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.RETURN:
 		return p.ParseReturnStatement()
+	case token.BREAK:
+		return &ast.BreakStatement{}
 	default:
 		return p.ParseExpressionStatement()
 	}
@@ -367,6 +370,43 @@ func (p *Parser) ParseWhileExpression() ast.Expression {
 
 	p.NextToken()
 	expression.Condition = p.ParseExpression(LOWEST)
+
+	if !p.ExpectPeek(token.RPAREN) {
+		return nil
+	}
+
+	if !p.ExpectPeek(token.LBRACE) {
+		return nil
+	}
+
+	expression.Consequence = p.ParseBlockStatement()
+
+	return expression
+}
+
+func (p *Parser) ParseForExpression() ast.Expression {
+	expression := &ast.ForExpression{Token: p.curToken}
+
+	if !p.ExpectPeek(token.LPAREN) {
+		return nil
+	}
+
+	p.NextToken()
+	expression.Initial = p.ParseExpression(LOWEST)
+
+	if !p.ExpectPeek(token.SEMICOLON) {
+		return nil
+	}
+
+	p.NextToken()
+	expression.Condition = p.ParseExpression(LOWEST)
+
+	if !p.ExpectPeek(token.SEMICOLON) {
+		return nil
+	}
+
+	p.NextToken()
+	expression.Increment = p.ParseExpression(LOWEST)
 
 	if !p.ExpectPeek(token.RPAREN) {
 		return nil

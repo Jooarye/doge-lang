@@ -62,12 +62,16 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return EvalIfExpression(node, env)
 	case *ast.WhileExpression:
 		return EvalWhileExpression(node, env)
+	case *ast.ForExpression:
+		return EvalForExpression(node, env)
 	case *ast.ReturnStatement:
 		val := Eval(node.ReturnValue, env)
 		if IsError(val) {
 			return val
 		}
 		return &object.ReturnValue{Value: val}
+	case *ast.BreakStatement:
+		return &object.Break{}
 	case *ast.CallExpression:
 		function := Eval(node.Function, env)
 		if IsError(function) {
@@ -166,7 +170,7 @@ func EvalAssignExpression(literal string, idt *ast.Identifier, right object.Obje
 	}
 
 	env.Set(idt.Value, result)
-	return &object.Null{}
+	return NULL
 }
 
 func EvalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {
@@ -311,7 +315,7 @@ func EvalBlockStatements(block *ast.BlockStatement, env *object.Environment) obj
 
 		if result != nil {
 			rt := result.Type()
-			if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ {
+			if rt == object.RETURN_VALUE_OBJ || rt == object.BREAK_OBJ || rt == object.ERROR_OBJ {
 				return result
 			}
 		}
@@ -518,11 +522,48 @@ func EvalWhileExpression(we *ast.WhileExpression, env *object.Environment) objec
 
 	for IsTruthy(condition) {
 		evaluated = Eval(we.Consequence, env)
-		if IsError(evaluated) || evaluated.Type() == object.RETURN_VALUE_OBJ {
+		if IsError(evaluated) || evaluated.Type() == object.RETURN_VALUE_OBJ || evaluated.Type() == object.BREAK_OBJ {
 			return evaluated
 		}
 
 		condition = Eval(we.Condition, env)
+		if IsError(condition) {
+			return condition
+		}
+	}
+
+	if evaluated != nil {
+		return evaluated
+	}
+
+	return NULL
+}
+
+func EvalForExpression(fe *ast.ForExpression, env *object.Environment) object.Object {
+	var evaluated object.Object
+
+	initial := Eval(fe.Initial, env)
+	if IsError(initial) {
+		return initial
+	}
+
+	condition := Eval(fe.Condition, env)
+	if IsError(condition) {
+		return condition
+	}
+
+	for IsTruthy(condition) {
+		evaluated = Eval(fe.Consequence, env)
+		if IsError(evaluated) || evaluated.Type() == object.RETURN_VALUE_OBJ || evaluated.Type() == object.BREAK_OBJ {
+			return evaluated
+		}
+
+		increment := Eval(fe.Increment, env)
+		if IsError(increment) {
+			return increment
+		}
+
+		condition = Eval(fe.Condition, env)
 		if IsError(condition) {
 			return condition
 		}

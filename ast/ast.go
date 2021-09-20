@@ -80,6 +80,20 @@ func (rs *ReturnStatement) String() string {
 	return out.String()
 }
 
+type BreakStatement struct {
+	Token       token.Token
+	ReturnValue Expression
+}
+
+func (bs *BreakStatement) statementNode() {}
+func (bs *BreakStatement) TokenLiteral() string {
+	return bs.Token.Literal
+}
+
+func (bs *BreakStatement) String() string {
+	return "BREAK"
+}
+
 type ExpressionStatement struct {
 	Token      token.Token
 	Expression Expression
@@ -245,6 +259,29 @@ func (we *WhileExpression) String() string {
 	out.WriteString(we.Condition.String())
 	out.WriteString(" ")
 	out.WriteString(we.Consequence.String())
+
+	return out.String()
+}
+
+type ForExpression struct {
+	Token       token.Token
+	Initial     Expression
+	Condition   Expression
+	Increment   Expression
+	Consequence *BlockStatement
+}
+
+func (fe *ForExpression) expressionNode() {}
+func (fe *ForExpression) TokenLiteral() string {
+	return fe.Token.Literal
+}
+func (fe *ForExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("for ")
+	out.WriteString(fe.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(fe.Consequence.String())
 
 	return out.String()
 }
