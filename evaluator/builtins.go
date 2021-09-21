@@ -30,6 +30,7 @@ func InitBuiltins() {
 
 			return &object.Null{}
 		},
+		Documentation: "This function appends an object to a given array!",
 	}
 	builtins["remove"] = &object.Builtin{
 		Fn: func(env *object.Environment, args ...object.Object) object.Object {
@@ -55,6 +56,7 @@ func InitBuiltins() {
 
 			return obj
 		},
+		Documentation: "This function removes on object from an array!",
 	}
 	builtins["print"] = &object.Builtin{
 		Fn: func(env *object.Environment, args ...object.Object) object.Object {
@@ -72,6 +74,7 @@ func InitBuiltins() {
 			fmt.Println(out)
 			return &object.Null{}
 		},
+		Documentation: "This function prints every object that is given to it, multiple arguments will be seperated by a space!",
 	}
 	builtins["len"] = &object.Builtin{
 		Fn: func(env *object.Environment, args ...object.Object) object.Object {
@@ -90,6 +93,7 @@ func InitBuiltins() {
 				return NewError("argument to `len` not supported, got=%s", args[0].Type())
 			}
 		},
+		Documentation: "This function returns the length of an array, string or hash!",
 	}
 	builtins["sum"] = &object.Builtin{
 		Fn: func(env *object.Environment, args ...object.Object) object.Object {
@@ -121,6 +125,7 @@ func InitBuiltins() {
 
 			return &object.Integer{Value: int64(value)}
 		},
+		Documentation: "This function returns the sum of an array!",
 	}
 	builtins["min"] = &object.Builtin{
 		Fn: func(env *object.Environment, args ...object.Object) object.Object {
@@ -158,6 +163,7 @@ func InitBuiltins() {
 
 			return &object.Integer{Value: int64(value)}
 		},
+		Documentation: "This function returns the smallest value of an array!",
 	}
 	builtins["max"] = &object.Builtin{
 		Fn: func(env *object.Environment, args ...object.Object) object.Object {
@@ -193,6 +199,7 @@ func InitBuiltins() {
 
 			return &object.Integer{Value: int64(value)}
 		},
+		Documentation: "This function returns the max value of an array!",
 	}
 	builtins["int"] = &object.Builtin{
 		Fn: func(env *object.Environment, args ...object.Object) object.Object {
@@ -222,6 +229,7 @@ func InitBuiltins() {
 
 			return NewError("argument to int must be string or float. got=%s", args[0].Type())
 		},
+		Documentation: "This function converts a string or float to an int!",
 	}
 	builtins["float"] = &object.Builtin{
 		Fn: func(env *object.Environment, args ...object.Object) object.Object {
@@ -251,9 +259,11 @@ func InitBuiltins() {
 
 			return NewError("argument to int must be string or int. got=%s", args[0].Type())
 		},
+		Documentation: "This function converts a string or int to a float!",
 	}
 	builtins["map"] = &object.Builtin{
-		Fn: mapBuiltin,
+		Fn:            mapBuiltin,
+		Documentation: "This function calls a function for every entry in an array and adds the result to a new one!",
 	}
 	builtins["import"] = &object.Builtin{
 		Fn: func(env *object.Environment, args ...object.Object) object.Object {
@@ -302,7 +312,21 @@ func InitBuiltins() {
 			env.Set("__name__", &object.String{Value: "__main__"})
 			return &object.Null{}
 		},
+		Documentation: "This function imports other doge files!",
 	}
+	builtins["help"] = &object.Builtin{
+		Fn:            helpBuiltin,
+		Documentation: "Print this menu!",
+	}
+}
+
+func helpBuiltin(env *object.Environment, args ...object.Object) object.Object {
+	fmt.Println("Name\tDocumentation")
+	fmt.Println("---------------------")
+	for key, val := range builtins {
+		fmt.Printf("%s\t%s\n", key, val.Documentation)
+	}
+	return &object.Null{}
 }
 
 func mapBuiltin(env *object.Environment, args ...object.Object) object.Object {

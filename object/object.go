@@ -178,7 +178,8 @@ func (s *String) Inspect() string {
 type BuiltinFunction func(env *Environment, args ...Object) Object
 
 type Builtin struct {
-	Fn BuiltinFunction
+	Fn            BuiltinFunction
+	Documentation string
 }
 
 func (b *Builtin) Type() ObjectType {
