@@ -5,6 +5,7 @@ import (
 	"doge/ast"
 	"fmt"
 	"hash/fnv"
+	"strconv"
 	"strings"
 )
 
@@ -53,7 +54,7 @@ func (f *Float) Type() ObjectType {
 	return FLOAT_OBJ
 }
 func (f *Float) Inspect() string {
-	return fmt.Sprintf("%f", f.Value)
+	return strconv.FormatFloat(f.Value, 'f', -1, 64)
 }
 
 type Boolean struct {

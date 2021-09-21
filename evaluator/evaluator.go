@@ -602,12 +602,17 @@ func EvalBangOperatorExpression(right object.Object) object.Object {
 }
 
 func EvalMinusOperatorExpression(right object.Object) object.Object {
-	if right.Type() != object.INTEGER_OBJ {
+	if right.Type() != object.INTEGER_OBJ && right.Type() != object.FLOAT_OBJ {
 		return NewError("unknown operator: -%s", right.Type())
 	}
 
-	value := right.(*object.Integer).Value
-	return &object.Integer{Value: -value}
+	if right.Type() == object.INTEGER_OBJ {
+		value := right.(*object.Integer).Value
+		return &object.Integer{Value: -value}
+	}
+
+	value := right.(*object.Float).Value
+	return &object.Float{Value: -value}
 }
 
 func NativeBoolToBooleanObject(input bool) *object.Boolean {

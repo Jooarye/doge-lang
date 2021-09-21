@@ -101,38 +101,25 @@ func InitBuiltins() {
 				return NewError("argument to `sum` must be array. got=%T", args[0])
 			}
 
-			value := int64(0)
+			isFloat := false
+			value := float64(0)
 
 			for _, elm := range array.Elements {
 				if elm.Type() == object.INTEGER_OBJ {
 					intObj := elm.(*object.Integer)
-					value += intObj.Value
+					value += float64(intObj.Value)
+				} else if elm.Type() == object.FLOAT_OBJ {
+					fltObj := elm.(*object.Float)
+					value += fltObj.Value
+					isFloat = true
 				}
 			}
 
-			return &object.Integer{Value: value}
-		},
-	}
-	builtins["sumf"] = &object.Builtin{
-		Fn: func(env *object.Environment, args ...object.Object) object.Object {
-			if len(args) != 1 {
-				return NewError("argument to `sum` must be array.")
-			}
-			array, ok := args[0].(*object.Array)
-			if !ok {
-				return NewError("argument to `sum` must be array. got=%T", args[0])
+			if isFloat {
+				return &object.Float{Value: value}
 			}
 
-			value := float64(0)
-
-			for _, elm := range array.Elements {
-				if elm.Type() == object.FLOAT_OBJ {
-					floatObj := elm.(*object.Float)
-					value += floatObj.Value
-				}
-			}
-
-			return &object.Float{Value: value}
+			return &object.Integer{Value: int64(value)}
 		},
 	}
 	builtins["min"] = &object.Builtin{
@@ -145,42 +132,31 @@ func InitBuiltins() {
 				return NewError("argument to `sum` must be array. got=%T", args[0])
 			}
 
-			value := int64(math.MaxInt64)
+			isFloat := false
+			value := float64(math.MaxFloat64)
 
 			for _, elm := range array.Elements {
 				if elm.Type() == object.INTEGER_OBJ {
 					intObj := elm.(*object.Integer)
-					if intObj.Value < value {
-						value = intObj.Value
+
+					if float64(intObj.Value) < value {
+						value = float64(intObj.Value)
+					}
+				} else if elm.Type() == object.FLOAT_OBJ {
+					fltObj := elm.(*object.Float)
+
+					if fltObj.Value < value {
+						isFloat = true
+						value = fltObj.Value
 					}
 				}
 			}
 
-			return &object.Integer{Value: value}
-		},
-	}
-	builtins["minf"] = &object.Builtin{
-		Fn: func(env *object.Environment, args ...object.Object) object.Object {
-			if len(args) != 1 {
-				return NewError("argument to `sum` must be array.")
-			}
-			array, ok := args[0].(*object.Array)
-			if !ok {
-				return NewError("argument to `sum` must be array. got=%T", args[0])
+			if isFloat {
+				return &object.Float{Value: value}
 			}
 
-			value := math.MaxFloat64
-
-			for _, elm := range array.Elements {
-				if elm.Type() == object.FLOAT_OBJ {
-					floatObj := elm.(*object.Float)
-					if floatObj.Value < value {
-						value = floatObj.Value
-					}
-				}
-			}
-
-			return &object.Float{Value: value}
+			return &object.Integer{Value: int64(value)}
 		},
 	}
 	builtins["max"] = &object.Builtin{
@@ -193,42 +169,29 @@ func InitBuiltins() {
 				return NewError("argument to `sum` must be array. got=%T", args[0])
 			}
 
-			value := int64(0)
+			isFloat := false
+			value := float64(0)
 
 			for _, elm := range array.Elements {
 				if elm.Type() == object.INTEGER_OBJ {
 					intObj := elm.(*object.Integer)
-					if intObj.Value > value {
-						value = intObj.Value
+					if float64(intObj.Value) > value {
+						value = float64(intObj.Value)
+					}
+				} else if elm.Type() == object.FLOAT_OBJ {
+					fltObj := elm.(*object.Float)
+					if fltObj.Value > value {
+						value = fltObj.Value
+						isFloat = true
 					}
 				}
 			}
 
-			return &object.Integer{Value: value}
-		},
-	}
-	builtins["maxf"] = &object.Builtin{
-		Fn: func(env *object.Environment, args ...object.Object) object.Object {
-			if len(args) != 1 {
-				return NewError("argument to `sum` must be array.")
-			}
-			array, ok := args[0].(*object.Array)
-			if !ok {
-				return NewError("argument to `sum` must be array. got=%T", args[0])
+			if isFloat {
+				return &object.Float{Value: value}
 			}
 
-			value := float64(0)
-
-			for _, elm := range array.Elements {
-				if elm.Type() == object.FLOAT_OBJ {
-					floatObj := elm.(*object.Float)
-					if floatObj.Value > value {
-						value = floatObj.Value
-					}
-				}
-			}
-
-			return &object.Float{Value: value}
+			return &object.Integer{Value: int64(value)}
 		},
 	}
 	builtins["int"] = &object.Builtin{
@@ -330,7 +293,7 @@ func InitBuiltins() {
 
 				if len(p.Errors()) != 0 {
 					env.Set("__name__", &object.String{Value: "__main__"})
-					return NewError("errors while importing file '%s'", strObj.Value)
+					return NewError("errors while importing file '%s'\n\t%s", strObj.Value, strings.Join(p.Errors(), "\n\t"))
 				}
 
 				_ = Eval(program, env)

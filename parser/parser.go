@@ -16,6 +16,7 @@ const (
 	SUM
 	PRODUCT
 	PREFIX
+	POWER
 	CALL
 	INDEX
 )
@@ -36,7 +37,7 @@ var precedences = map[token.TokenType]int{
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
 	token.CARET:    PRODUCT,
-	token.POWER:    PRODUCT,
+	token.POWER:    POWER,
 	token.LPAREN:   CALL,
 	token.LBRAKET:  INDEX,
 	token.LAND:     EQUALS,
