@@ -26,10 +26,15 @@ func RunFile(path string) {
 		fmt.Println("Whoops such errors. Wow!!")
 		fmt.Println("Syntax Errors:")
 		PrintParserErrors(p.Errors())
+		os.Exit(0)
 	}
 
 	env := object.NewEnvironment()
 	env.Set("__name__", &object.String{Value: "__main__"})
 	evaluator.InitBuiltins()
-	_ = evaluator.Eval(program, env)
+
+	res := evaluator.Eval(program, env)
+	if evaluator.IsError(res) {
+		fmt.Println(res.Inspect())
+	}
 }

@@ -1,0 +1,11 @@
+sumOfSq = 0;
+sqOfSum = 0;
+
+for (i = 1; i <= 100; i+= 1) {
+    sumOfSq += i ** 2;
+    sqOfSum += i;
+}
+
+sqOfSum = sqOfSum ** 2;
+
+print(sqOfSum - sumOfSq);

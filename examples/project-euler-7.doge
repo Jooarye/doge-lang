@@ -1,0 +1,27 @@
+NthPrime = func(n) {
+    primes = [2];
+    num = 3;
+    
+    while (len(primes) < n) {
+        prime = true;
+
+        for (i = 0; i < len(primes); i += 1) {
+            p = primes[i];
+
+            if (num % p == 0) {
+                prime = false;
+                break;
+            } 
+        }
+
+        if (prime) {
+            append(primes, num);
+        }
+
+        num += 2;
+    }
+
+    return primes[-1];
+}
+
+print(NthPrime(10001));

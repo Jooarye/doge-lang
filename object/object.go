@@ -112,6 +112,7 @@ func (e *Error) Inspect() string {
 type Environment struct {
 	store map[string]Object
 	outer *Environment
+	loop  bool
 }
 
 func (e *Environment) Get(name string) (Object, bool) {
@@ -122,13 +123,19 @@ func (e *Environment) Get(name string) (Object, bool) {
 	return obj, ok
 }
 func (e *Environment) Set(name string, val Object) Object {
+	if e.outer != nil {
+		if _, ok := e.outer.Get(name); ok && e.loop {
+			e.outer.store[name] = val
+		}
+	}
+
 	e.store[name] = val
 	return val
 }
 
 func NewEnvironment() *Environment {
 	s := make(map[string]Object)
-	return &Environment{store: s, outer: nil}
+	return &Environment{store: s, outer: nil, loop: false}
 }
 
 func NewEnclosedEnvironment(outer *Environment) *Environment {
@@ -137,10 +144,15 @@ func NewEnclosedEnvironment(outer *Environment) *Environment {
 	return env
 }
 
+func NewPartiallyEnclosedEnvironment(outer *Environment) *Environment {
+	env := NewEnclosedEnvironment(outer)
+	env.loop = true
+	return env
+}
+
 type Function struct {
 	Parameters []*ast.Identifier
 	Body       *ast.BlockStatement
-	Env        *Environment
 }
 
 func (f *Function) Type() ObjectType {

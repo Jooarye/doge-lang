@@ -57,7 +57,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.FunctionLiteral:
 		params := node.Parameters
 		body := node.Body
-		return &object.Function{Parameters: params, Env: env, Body: body}
+		return &object.Function{Parameters: params, Body: body}
 	case *ast.IfExpression:
 		return EvalIfExpression(node, env)
 	case *ast.WhileExpression:
@@ -77,6 +77,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if IsError(function) {
 			return function
 		}
+
 		args := EvalExpressions(node.Arguments, env)
 		if len(args) == 1 && IsError(args[0]) {
 			return args[0]
@@ -205,9 +206,26 @@ func EvalIndexExpression(left, index object.Object) object.Object {
 		return EvalArrayIndexExpression(left, index)
 	case left.Type() == object.HASH_OBJ:
 		return EvalHashIndexExpression(left, index)
+	case left.Type() == object.STRING_OBJ:
+		return EvalStringIndexExpression(left, index)
 	default:
 		return NewError("index operator not supported: %s", left.Type())
 	}
+}
+
+func EvalStringIndexExpression(left object.Object, index object.Object) object.Object {
+	strObj := left.(*object.String)
+	idx, ok := index.(*object.Integer)
+
+	if !ok {
+		return NewError("Index for string can only be integer!")
+	}
+
+	if idx.Value > int64(len(strObj.Value)) || idx.Value < -int64(len(strObj.Value)) {
+		return NewError("Index out of range!")
+	}
+
+	return &object.String{Value: fmt.Sprintf("%c", strObj.Value[idx.Value])}
 }
 
 func EvalHashIndexExpression(left, index object.Object) object.Object {
@@ -273,7 +291,7 @@ func RunFunction(fn *object.Function, args []object.Object) object.Object {
 }
 
 func ExtendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {
-	env := object.NewEnclosedEnvironment(fn.Env)
+	env := object.NewEnvironment()
 
 	for paramIdx, param := range fn.Parameters {
 		env.Set(param.Value, args[paramIdx])
@@ -377,6 +395,8 @@ func EvalMixedInfixExpression(operator string, left, right object.Object) object
 		return &object.Float{Value: leftVal * rightVal}
 	case "/":
 		return &object.Float{Value: leftVal / rightVal}
+	case "%":
+		return &object.Integer{Value: int64(leftVal) % int64(rightVal)}
 	case "**":
 		return &object.Float{Value: math.Pow(leftVal, rightVal)}
 	case "&&":
@@ -425,6 +445,8 @@ func EvalIntegerInfixExpression(operator string, left, right object.Object) obje
 		return &object.Integer{Value: leftVal << rightVal}
 	case ">>":
 		return &object.Integer{Value: leftVal >> rightVal}
+	case "%":
+		return &object.Integer{Value: leftVal % rightVal}
 	case "&&":
 		return NativeBoolToBooleanObject((leftVal > 0) && (rightVal > 0))
 	case "||":
@@ -461,6 +483,8 @@ func EvalFloatInfixExpression(operator string, left, right object.Object) object
 		return &object.Float{Value: leftVal / rightVal}
 	case "**":
 		return &object.Float{Value: math.Pow(leftVal, rightVal)}
+	case "%":
+		return &object.Integer{Value: int64(leftVal) % int64(rightVal)}
 	case "&&":
 		return NativeBoolToBooleanObject((leftVal > 0) && (rightVal > 0))
 	case "||":
@@ -499,34 +523,41 @@ func EvalStringInfixExpression(operator string, left, right object.Object) objec
 }
 
 func EvalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {
-	condition := Eval(ie.Condition, env)
+	pEnv := object.NewPartiallyEnclosedEnvironment(env)
+	condition := Eval(ie.Condition, pEnv)
 	if IsError(condition) {
 		return condition
 	}
 
 	if IsTruthy(condition) {
-		return Eval(ie.Consequence, env)
+		return Eval(ie.Consequence, pEnv)
 	} else if ie.Alternative != nil {
-		return Eval(ie.Alternative, env)
+		return Eval(ie.Alternative, pEnv)
 	} else {
 		return NULL
 	}
 }
 
 func EvalWhileExpression(we *ast.WhileExpression, env *object.Environment) object.Object {
+	pEnv := object.NewPartiallyEnclosedEnvironment(env)
 	var evaluated object.Object
-	condition := Eval(we.Condition, env)
+
+	condition := Eval(we.Condition, pEnv)
 	if IsError(condition) {
 		return condition
 	}
 
 	for IsTruthy(condition) {
-		evaluated = Eval(we.Consequence, env)
-		if IsError(evaluated) || evaluated.Type() == object.RETURN_VALUE_OBJ || evaluated.Type() == object.BREAK_OBJ {
+		evaluated = Eval(we.Consequence, pEnv)
+		if IsError(evaluated) || evaluated.Type() == object.RETURN_VALUE_OBJ {
 			return evaluated
 		}
 
-		condition = Eval(we.Condition, env)
+		if evaluated.Type() == object.BREAK_OBJ {
+			return NULL
+		}
+
+		condition = Eval(we.Condition, pEnv)
 		if IsError(condition) {
 			return condition
 		}
@@ -540,30 +571,35 @@ func EvalWhileExpression(we *ast.WhileExpression, env *object.Environment) objec
 }
 
 func EvalForExpression(fe *ast.ForExpression, env *object.Environment) object.Object {
+	pEnv := object.NewEnclosedEnvironment(env)
 	var evaluated object.Object
 
-	initial := Eval(fe.Initial, env)
+	initial := Eval(fe.Initial, pEnv)
 	if IsError(initial) {
 		return initial
 	}
 
-	condition := Eval(fe.Condition, env)
+	condition := Eval(fe.Condition, pEnv)
 	if IsError(condition) {
 		return condition
 	}
 
 	for IsTruthy(condition) {
-		evaluated = Eval(fe.Consequence, env)
-		if IsError(evaluated) || evaluated.Type() == object.RETURN_VALUE_OBJ || evaluated.Type() == object.BREAK_OBJ {
+		evaluated = Eval(fe.Consequence, pEnv)
+		if IsError(evaluated) || evaluated.Type() == object.RETURN_VALUE_OBJ {
 			return evaluated
 		}
 
-		increment := Eval(fe.Increment, env)
+		if evaluated.Type() == object.BREAK_OBJ {
+			return NULL
+		}
+
+		increment := Eval(fe.Increment, pEnv)
 		if IsError(increment) {
 			return increment
 		}
 
-		condition = Eval(fe.Condition, env)
+		condition = Eval(fe.Condition, pEnv)
 		if IsError(condition) {
 			return condition
 		}

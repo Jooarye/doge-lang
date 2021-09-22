@@ -1,0 +1,19 @@
+x = 20;
+
+while (true) {
+    perfect = true;
+
+    for (i = 1; i <= 19; i += 1) {
+        if (x % i != 0) {
+            perfect = false;
+            break;
+        }
+    }
+
+    if (perfect) {
+        print(x);
+        break;
+    }
+
+    x += 20;
+}

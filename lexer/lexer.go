@@ -12,7 +12,7 @@ type Lexer struct {
 	ch           byte
 }
 
-var HEX_CHARS string = "0123456789abcdef"
+var HEX_CHARS = "0123456789abcdef"
 
 func New(input string) *Lexer {
 	l := &Lexer{input: input}
@@ -145,6 +145,8 @@ func (l *Lexer) NextToken() token.Token {
 		}
 	case '^':
 		tok = NewToken(token.CARET, l.ch)
+	case '%':
+		tok = NewToken(token.MODULO, l.ch)
 	case '&':
 		if l.PeekChar() == '&' {
 			ch := l.ch

@@ -1,0 +1,13 @@
+for (x = 0; x < 1000; x += 1) {
+    for (y = 0; y < x; y += 1) {
+        for (z = 0; z < y; z += 1) {
+
+            if (z < y && y < x && x + y + z == 1000) {
+                if (z ** 2 + y ** 2 == x ** 2) {
+                    print(x, y, z);
+                    print(x * y * z);
+                }
+            }
+        }
+    }
+}

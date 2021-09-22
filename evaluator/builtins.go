@@ -47,12 +47,18 @@ func InitBuiltins() {
 			index := args[1].(*object.Integer)
 			arr := args[0].(*object.Array)
 
+			idx := index.Value
+
 			if int64(len(arr.Elements)) <= index.Value {
 				return NewError("Index out of bounds!")
 			}
 
-			obj := arr.Elements[index.Value]
-			arr.Elements = append(arr.Elements[:index.Value], arr.Elements[index.Value+1:]...)
+			if index.Value < 0 {
+				idx += int64(len(arr.Elements))
+			}
+
+			obj := arr.Elements[idx]
+			arr.Elements = append(arr.Elements[:idx], arr.Elements[idx+1:]...)
 
 			return obj
 		},
@@ -318,6 +324,14 @@ func InitBuiltins() {
 		Fn:            helpBuiltin,
 		Documentation: "Print this menu!",
 	}
+	builtins["filter"] = &object.Builtin{
+		Fn:            filterBuiltin,
+		Documentation: "This function filters all entries of a list, only returning the ones that match the filter!",
+	}
+	builtins["string"] = &object.Builtin{
+		Fn:            stringBuiltin,
+		Documentation: "Converts native type to string!",
+	}
 }
 
 func helpBuiltin(env *object.Environment, args ...object.Object) object.Object {
@@ -360,4 +374,51 @@ func mapBuiltin(env *object.Environment, args ...object.Object) object.Object {
 	}
 
 	return &object.Array{Elements: elements}
+}
+
+func filterBuiltin(env *object.Environment, args ...object.Object) object.Object {
+	if len(args) != 2 {
+		return NewError("wrong number of arguments. got=%d, want=2", len(args))
+	}
+	if args[0].Type() != object.ARRAY_OBJ {
+		return NewError("argument to `map` must be ARRAY, got %s", args[0].Type())
+	}
+	if args[1].Type() != object.FUNCTION_OBJ && args[1].Type() != object.BUILTIN_OBJ {
+		return NewError("second argument to `map` must be FUNCTION, got=%s", args[1].Type())
+	}
+
+	var elements []object.Object
+
+	arr := args[0].(*object.Array)
+	if args[1].Type() == object.FUNCTION_OBJ {
+		funct := args[1].(*object.Function)
+
+		for _, elm := range arr.Elements {
+			res := RunFunction(funct, []object.Object{elm})
+
+			if IsTruthy(res) {
+				elements = append(elements, elm)
+			}
+		}
+	} else {
+		bi := args[1].(*object.Builtin)
+
+		for _, elm := range arr.Elements {
+			res := bi.Fn(env, elm)
+
+			if IsTruthy(res) {
+				elements = append(elements, elm)
+			}
+		}
+	}
+
+	return &object.Array{Elements: elements}
+}
+
+func stringBuiltin(env *object.Environment, args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return NewError("expected 1 argument. got=%d", len(args))
+	}
+
+	return &object.String{Value: args[0].Inspect()}
 }

@@ -1,0 +1,20 @@
+a = [0, 1];
+i = 2;
+
+while (true) {
+    new = a[i - 2] + a[i - 1];
+
+    if (new > 4000000) {
+        break;
+    }
+
+	append(a, new);
+    i += 1;
+}
+
+b = filter(a, func(x){
+    return x%2==0;
+});
+
+print(b)
+print("Result:", sum(b));

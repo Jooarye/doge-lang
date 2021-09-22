@@ -1,0 +1,31 @@
+longest = ""
+
+IsPalindromic = func(s) {
+    l = len(s);
+
+    for (x = 0; x < l; x += 1) {
+        if (s[x] != s[l - x - 1]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+for (a = 100; a < 1000; a += 1) {
+    for (b = 100; b < 1000; b += 1) {
+        x = a * b;
+        xs = string(x);
+
+        if (IsPalindromic(xs)) {
+            if (len(xs) > len(longest)) {
+                longest = xs;
+            }
+            if (len(xs) == len(longest) && int(longest) < x) {
+                longest = xs;
+            }
+        }
+    }
+}
+
+print(longest);

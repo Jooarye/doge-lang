@@ -11,6 +11,7 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	AND_OR
 	EQUALS
 	LESS_GREATER
 	SUM
@@ -26,22 +27,23 @@ var precedences = map[token.TokenType]int{
 	token.UNEQUAL:  EQUALS,
 	token.LT:       LESS_GREATER,
 	token.GT:       LESS_GREATER,
-	token.LTEQ:     LESS_GREATER,
-	token.GTEQ:     LESS_GREATER,
+	token.LTEQ:     EQUALS,
+	token.GTEQ:     EQUALS,
+	token.LAND:     AND_OR,
+	token.LOR:      AND_OR,
 	token.PLUS:     SUM,
 	token.MINUS:    SUM,
 	token.AND:      SUM,
 	token.PIPE:     SUM,
 	token.SHIFTR:   SUM,
 	token.SHIFTL:   SUM,
+	token.MODULO:   PRODUCT,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
 	token.CARET:    PRODUCT,
 	token.POWER:    POWER,
 	token.LPAREN:   CALL,
 	token.LBRAKET:  INDEX,
-	token.LAND:     EQUALS,
-	token.LOR:      EQUALS,
 }
 
 type (
@@ -87,6 +89,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.RegisterInfix(token.ASTERISK, p.ParseInfixExpression)
 	p.RegisterInfix(token.UNEQUAL, p.ParseInfixExpression)
 	p.RegisterInfix(token.LBRAKET, p.ParseIndexExpression)
+	p.RegisterInfix(token.MODULO, p.ParseInfixExpression)
 	p.RegisterInfix(token.SHIFTL, p.ParseInfixExpression)
 	p.RegisterInfix(token.SHIFTR, p.ParseInfixExpression)
 	p.RegisterInfix(token.LPAREN, p.ParseCallExpression)
@@ -230,6 +233,10 @@ func (p *Parser) ParseStatement() ast.Statement {
 	case token.RETURN:
 		return p.ParseReturnStatement()
 	case token.BREAK:
+		if p.PeekTokenIs(token.SEMICOLON) {
+			p.NextToken()
+		}
+
 		return &ast.BreakStatement{}
 	default:
 		return p.ParseExpressionStatement()
@@ -256,6 +263,7 @@ func (p *Parser) ParseIdentifier() ast.Expression {
 
 		return expression
 	}
+
 	return ident
 }
 

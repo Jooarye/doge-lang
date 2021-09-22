@@ -1,0 +1,17 @@
+s = 3;
+
+for (num = 3; num < 2000000; num += 2) {
+    prime = true;
+
+    for (i = 2; i < num / 2; i += 1) {
+        if (num % i == 0) {
+            prime = false;
+            break;
+        } 
+    }
+
+    if (prime) {
+        s += num;
+        print(s);
+    }
+}

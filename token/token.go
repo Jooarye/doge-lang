@@ -22,6 +22,7 @@ const (
 	MINUS    = "-"
 	BANG     = "!"
 	ASTERISK = "*"
+	MODULO   = "%"
 	AND      = "&"
 	PIPE     = "|"
 	CARET    = "^"
